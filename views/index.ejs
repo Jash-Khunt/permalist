@@ -1,0 +1,108 @@
+<%- include('partials/header.ejs'); -%>
+
+<div class="lists-container">
+  <div class="list-creation">
+    <h2>Create New List</h2>
+    <form action="/create-list" method="post">
+      <input type="text" name="listName" placeholder="List Name" required>
+      <select name="listType" required>
+        <option value="daily">Daily List</option>
+        <option value="weekly">Weekly List</option>
+        <option value="monthly">Monthly List</option>
+      </select>
+      <button type="submit">Create</button>
+    </form>
+  </div>
+
+  <% for(let list of lists) { %>
+    <div class="list-box">
+      <div class="box" id="heading" onclick="toggleList('<%= list.id %>')">
+        <h1><%= list.name %> (<%= list.type %>)</h1>
+        <button class="toggle-btn" id="toggle-btn-<%= list.id %>">▼</button>
+      </div>
+      
+      <div class="box list-content" id="list-<%= list.id %>" style="display: none;">
+        <% for(let item of list.items) { %>
+          <div class="item">
+            <% if (list.type === 'weekly' || list.type === 'monthly') { %>
+              <h3><%= item.day_of_week || 'Day ' + item.date_of_month %></h3>
+            <% } %>
+            
+            <form action="/delete" method="post">
+              <input type="checkbox" onchange="this.form.submit()" name="deleteItemId" value="<%= item.id %>">
+              <input type="hidden" name="listId" value="<%= list.id %>">
+            </form>
+
+            <p id="title<%=item.id%>"><%= item.title %></p>
+
+            <form class="edit" action="/edit" method="post">
+              <input type="hidden" name="updatedItemId" value="<%= item.id %>">
+              <input type="hidden" name="listId" value="<%= list.id %>">
+              <input id="input<%=item.id%>" type="text" name="updatedItemTitle" value="<%= item.title %>" 
+                autocomplete="off" autofocus="true" hidden="true" />
+              <button id="done<%=item.id%>" class="edit" type="submit" hidden>
+                <img class="icon" src="/assets/icons/check-solid.svg" alt="tick image">
+              </button>
+            </form>
+            <button id="edit<%=item.id%>" class="edit" onclick="handler('<%=item.id%>')">
+              <img class="icon" src="/assets/icons/pencil-solid.svg" alt="pencil image">
+            </button>
+          </div>
+        <% } %>
+
+        <% if (list.type === 'daily') { %>
+          <form class="item" action="/add" method="post">
+            <input type="text" name="newItem" placeholder="New Item" autocomplete="off" autofocus="true" />
+            <input type="hidden" name="listId" value="<%= list.id %>">
+            <button class="add" type="submit">+</button>
+          </form>
+        <% } %>
+      </div>
+    </div>
+  <% } %>
+</div>
+
+<script>
+function toggleList(listId) {
+  const list = document.getElementById("list-" + listId);
+  const toggleBtn = document.getElementById("toggle-btn-" + listId);
+
+  if (list.style.display === "none") {
+    list.style.display = "block";
+    toggleBtn.innerHTML = "▲";
+    localStorage.setItem("list-" + listId, "open");
+  } else {
+    list.style.display = "none";
+    toggleBtn.innerHTML = "▼";
+    localStorage.setItem("list-" + listId, "closed");
+  }
+}
+
+// Restore list state from localStorage when page loads
+document.addEventListener("DOMContentLoaded", function () {
+  document.querySelectorAll(".list-content").forEach((list) => {
+    const listId = list.id.replace("list-", ""); // Extract list ID
+    const state = localStorage.getItem("list-" + listId);
+
+    if (state === "open") {
+      list.style.display = "block";
+      document.getElementById("toggle-btn-" + listId).innerHTML = "▲";
+    } else {
+      list.style.display = "none";
+      document.getElementById("toggle-btn-" + listId).innerHTML = "▼";
+    }
+  });
+});
+
+function handler(id) {
+  document.getElementById("title" + id).setAttribute("hidden", true);
+  document.getElementById("edit" + id).setAttribute("hidden", true);
+  document.getElementById("done" + id).removeAttribute("hidden");
+  document.getElementById("input" + id).removeAttribute("hidden");
+  document.getElementById("input" + id).focus();
+}
+
+</script>
+
+
+<%- include('partials/footer.ejs'); -%>
